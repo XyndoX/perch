@@ -248,8 +248,12 @@ jump.addEventListener('click', function () {
 });
 function appended() {
   state.count++;
-  $('stat').textContent = state.count + ' events';
+  setStat();
   if (state.pinned) pin(); else jump.hidden = false;
+}
+function setStat() {
+  var tok = state.tokens ? ' · ' + (state.tokens >= 1000 ? (state.tokens / 1000).toFixed(1) + 'k' : state.tokens) + ' ctx' : '';
+  $('stat').textContent = state.count + ' events' + tok;
 }
 
 /* ---------- small DOM helper ---------- */
@@ -374,6 +378,9 @@ function render(ev) {
       if (u.sessionUpdate === 'agent_message_chunk') { appendChunk(ev, u, 'msg'); appended(); return; }
       if (u.sessionUpdate === 'agent_thought_chunk') { appendChunk(ev, u, 'thought'); appended(); return; }
       if (u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update') { renderTool(ev, u); appended(); return; }
+      /* session metadata, not transcript — real agents emit usage_update many times per turn */
+      if (u.sessionUpdate === 'usage_update') { state.tokens = u.used || (u.usage && u.usage.totalTokens) || u.totalTokens || state.tokens; setStat(); return; }
+      if (u.sessionUpdate === 'available_commands_update' || u.sessionUpdate === 'session_info_update' || u.sessionUpdate === 'current_mode_update') { return; }
     }
     if (f.method === 'session/prompt' && ev.actor && ev.actor.type === 'human') { renderPrompt(ev, f); appended(); return; }
     renderRaw(ev); appended();

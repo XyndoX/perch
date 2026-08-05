@@ -87,7 +87,16 @@ onLines(process.stdin, (line) => {
   child.stdin.write(line + '\n')
   logFrame('client->agent', OWNER, line)
 })
-process.stdin.on('end', () => child.stdin.end())
+// editor gone (stdin EOF) → half-close the agent; if it ignores that, kill it.
+// ponytail: 5s grace, no configurability — EOF means the session is over.
+process.stdin.on('end', () => {
+  child.stdin.end()
+  setTimeout(() => child.kill('SIGTERM'), 5000).unref()
+})
+// propagate our own termination so the agent never outlives perch
+for (const sig of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(sig, () => { child.kill(sig); process.exit(130) })
+}
 
 // agent stdout -> our stdout (verbatim), except responses to injected requests
 onLines(child.stdout, (line) => {
@@ -184,6 +193,9 @@ const server = createServer(async (req, res) => {
 
   res.writeHead(404, { 'content-type': 'text/plain' }).end('not found')
 })
+
+// SSE comment lines keep idle connections alive through proxies; EventSource ignores them
+setInterval(() => { for (const r of subs) r.write(': ping\n\n') }, 25_000).unref()
 
 const port = Number(process.env.PERCH_PORT ?? 7337)
 server.listen(port, () => {

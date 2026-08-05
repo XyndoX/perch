@@ -4,10 +4,10 @@ Authoritative task list. Work top-down; tick with date + commit. v0.1 MVP shippe
 
 ## Phase 1 — Make it real
 
-- [ ] Run perch against a real ACP agent (`claude-code-acp` under Zed, or Gemini CLI). Log a real session, list every frame type the viewer renders badly. This is the highest-risk unknown — everything so far is fake-agent traffic.
-- [ ] Viewer: render `session/request_permission`, fs read/write requests, terminal output, plan updates decently (read-only display; delegated approval stays out of scope).
-- [ ] Decide rendering for real-world `agent_thought_chunk` volume (currently coalesced THINKING blocks — confirm it holds).
-- [ ] SSE keep-alive heartbeat (idle connections get dropped by intermediaries).
+- [x] Run perch against a real ACP agent (2026-08-06). Drove `@agentclientprotocol/claude-agent-acp` (the renamed claude-code-acp) through perch: real Write tool call executed, byte-faithful wire, full session recorded and verified in the viewer. Findings: real sessions emit `usage_update` many times per turn plus `available_commands_update` / `session_info_update` — viewer now shows usage as a header counter (`… · 49.8k ctx`) and keeps the rest out of the transcript. Also surfaced + fixed two termination defects: perch now SIGTERMs the agent if it ignores stdin EOF (5s grace) and forwards SIGINT/SIGTERM so the agent can't outlive perch. Probing from inside a Claude session needs `CLAUDECODE` unset.
+- [ ] Viewer: render `session/request_permission`, fs read/write requests, terminal output, plan updates decently (read-only display; delegated approval stays out of scope). Not yet observed live — the probe's permission mode auto-allowed; force one with a Bash-heavy prompt.
+- [ ] Observe real `agent_thought_chunk` volume (viewer already coalesces THINKING blocks; unobserved in probe — needs a thinking-heavy turn).
+- [x] SSE keep-alive heartbeat (2026-08-06): `: ping` comment every 25s.
 - [x] Name decision (2026-08-06): product is **perch**, repo renamed to github.com/XyndoX/perch. npm `perch` is taken — publish as `perched` or `@xyndox/perch` (decide at Phase 3 publish).
 
 ## Phase 2 — Validate the pain (no new features)
