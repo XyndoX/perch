@@ -8,7 +8,7 @@ Authoritative task list. Work top-down; tick with date + commit. v0.1 MVP shippe
 - [ ] Viewer: render `session/request_permission`, fs read/write requests, terminal output, plan updates decently (read-only display; delegated approval stays out of scope).
 - [ ] Decide rendering for real-world `agent_thought_chunk` volume (currently coalesced THINKING blocks — confirm it holds).
 - [ ] SSE keep-alive heartbeat (idle connections get dropped by intermediaries).
-- [ ] Name decision. Checked 2026-08-06: `perch`, `tandem`, `standby`, `shoulder`, `witness` all taken on npm; `perched` is FREE (`npx perched claude` still reads well). Chris decides; rename is one grep while nothing is public.
+- [x] Name decision (2026-08-06): product is **perch**, repo renamed to github.com/XyndoX/perch. npm `perch` is taken — publish as `perched` or `@xyndox/perch` (decide at Phase 3 publish).
 
 ## Phase 2 — Validate the pain (no new features)
 
