@@ -23,6 +23,23 @@ Open the URL, pick a name, watch. Type in the box to inject a prompt into the li
 
 No account, no cloud, no dependencies. The server is embedded in the proxy; share the URL over your LAN or tailscale.
 
+## Use with Zed
+
+Zed talks to ACP agents directly — point it at perch instead and the session becomes shareable. In Zed's `settings.json`:
+
+```json
+{
+  "agent_servers": {
+    "Claude (multiplayer)": {
+      "command": "node",
+      "args": ["/path/to/perch/src/perch.ts", "npx", "-y", "@agentclientprotocol/claude-agent-acp"]
+    }
+  }
+}
+```
+
+Start a thread with that agent; perch prints the share URL on stderr (Zed's agent logs).
+
 ## What you get in v0.1
 
 - **Byte-faithful passthrough** — perch never modifies or reorders the ACP wire.
