@@ -95,6 +95,24 @@ main{overflow-y:auto;overflow-x:hidden;padding:22px 18px 8px;scrollbar-color:#24
 .tool[data-status="failed"]{border-color:rgba(242,120,154,.3)}
 .tool[data-status="failed"] .st,.tool[data-status="failed"] .ic{color:var(--danger);border-color:rgba(242,120,154,.35)}
 
+/* permission rows — loud until resolved */
+.tool.perm{border-color:rgba(240,168,104,.4);color:var(--fg)}
+.tool.perm .ic{color:#f0a868}
+.tool.perm[data-status="pending"] .st{color:#f0a868;border-color:rgba(240,168,104,.4)}
+
+/* plan — one row, updated in place */
+.plan{
+  display:flex;flex-direction:column;gap:3px;padding:7px 12px;margin:1px 0;
+  background:var(--surface);border:1px solid var(--line);border-radius:7px;
+  font-family:var(--mono);font-size:12px;color:var(--dim);max-width:68ch;
+}
+.plan .plan-item{display:flex;gap:8px;align-items:baseline}
+.plan .plan-item .ic{width:14px;text-align:center;color:var(--dimmer);flex:none}
+.plan .plan-item.completed{opacity:.5}
+.plan .plan-item.completed .ic{color:var(--accent)}
+.plan .plan-item.in_progress{color:var(--fg)}
+.plan .plan-item.in_progress .ic{color:var(--accent)}
+
 /* system / presence lines */
 .sys{
   display:flex;align-items:center;gap:8px;justify-content:center;
@@ -229,7 +247,7 @@ function initials(name) {
 }
 
 /* ---------- state ---------- */
-var state = { me: null, count: 0, group: null, tools: Object.create(null), pinned: true, agentName: '' };
+var state = { me: null, count: 0, group: null, tools: Object.create(null), perms: Object.create(null), plan: null, pinned: true, agentName: '' };
 
 /* ---------- scrolling ---------- */
 var scrollQueued = false;
@@ -319,6 +337,43 @@ function renderTool(ev, u) {
   return row;
 }
 
+/* one plan row, updated in place — Claude Code re-sends the whole plan each update */
+function renderPlan(u) {
+  state.group = null;
+  var row = state.plan;
+  if (!row) { row = el('div', 'row plan'); state.plan = row; feed.appendChild(row); }
+  row.textContent = '';
+  (u.entries || []).forEach(function (en) {
+    var li = el('div', 'plan-item ' + (en.status || 'pending'));
+    li.appendChild(el('span', 'ic', STATUS_ICON[en.status] || '○'));
+    li.appendChild(el('span', null, en.content || ''));
+    row.appendChild(li);
+  });
+}
+
+function renderPerm(f) {
+  state.group = null;
+  var tc = (f.params && f.params.toolCall) || {};
+  var row = el('div', 'row tool perm');
+  row.dataset.status = 'pending';
+  row.appendChild(el('span', 'ic', '⚿'));
+  row.appendChild(el('span', 'title', tc.title || 'permission requested'));
+  row.appendChild(el('span', 'st', 'waiting for owner'));
+  state.perms[f.id] = { row: row, options: (f.params && f.params.options) || [] };
+  feed.appendChild(row);
+}
+
+function resolvePerm(f) {
+  var p = state.perms[f.id]; delete state.perms[f.id];
+  var o = f.result.outcome || {};
+  var chosen = null;
+  for (var i = 0; i < p.options.length; i++) if (p.options[i].optionId === o.optionId) chosen = p.options[i];
+  var allowed = o.outcome === 'selected' && (!chosen || /allow/i.test(chosen.kind || ''));
+  p.row.dataset.status = allowed ? 'completed' : 'failed';
+  p.row.children[2].textContent = (allowed ? '✓ ' : '✕ ') +
+    (o.outcome === 'cancelled' ? 'cancelled' : (chosen && chosen.name) || o.outcome);
+}
+
 function renderPrompt(ev, frame) {
   state.group = null;
   var a = ev.actor || {}, tint = colorFor(a.id);
@@ -378,10 +433,13 @@ function render(ev) {
       if (u.sessionUpdate === 'agent_message_chunk') { appendChunk(ev, u, 'msg'); appended(); return; }
       if (u.sessionUpdate === 'agent_thought_chunk') { appendChunk(ev, u, 'thought'); appended(); return; }
       if (u.sessionUpdate === 'tool_call' || u.sessionUpdate === 'tool_call_update') { renderTool(ev, u); appended(); return; }
+      if (u.sessionUpdate === 'plan') { renderPlan(u); appended(); return; }
       /* session metadata, not transcript — real agents emit usage_update many times per turn */
       if (u.sessionUpdate === 'usage_update') { state.tokens = u.used || (u.usage && u.usage.totalTokens) || u.totalTokens || state.tokens; setStat(); return; }
-      if (u.sessionUpdate === 'available_commands_update' || u.sessionUpdate === 'session_info_update' || u.sessionUpdate === 'current_mode_update') { return; }
+      if (u.sessionUpdate === 'available_commands_update' || u.sessionUpdate === 'session_info_update' || u.sessionUpdate === 'current_mode_update' || u.sessionUpdate === 'config_option_update') { return; }
     }
+    if (f.method === 'session/request_permission' && f.id !== undefined) { renderPerm(f); appended(); return; }
+    if (ev.dir === 'client->agent' && f.id !== undefined && f.result && f.result.outcome && state.perms[f.id]) { resolvePerm(f); appended(); return; }
     if (f.method === 'session/prompt' && ev.actor && ev.actor.type === 'human') { renderPrompt(ev, f); appended(); return; }
     renderRaw(ev); appended();
   } catch (e) {
