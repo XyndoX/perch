@@ -2,6 +2,8 @@
 
 Multiplayer sessions for ACP coding agents.
 
+![perch live session — two people steering one agent](docs/demo.png)
+
 `perch` is a transparent proxy that sits on the [Agent Client Protocol](https://agentclientprotocol.com) wire between a coding agent and its editor. Your running agent session gets a share link — a second person can open it in a browser, watch the transcript and tool calls live, see who did what, and inject a correction into the running session without killing it.
 
 Works with any ACP agent: Claude Code, Gemini CLI, Goose, and friends.
