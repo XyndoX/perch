@@ -1,0 +1,12 @@
+{
+  "name": "perch",
+  "version": "0.1.0",
+  "description": "Multiplayer sessions for ACP coding agents — transparent proxy with live share link",
+  "type": "module",
+  "bin": { "perch": "src/perch.ts" },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "engines": { "node": ">=22.18" },
+  "license": "Apache-2.0"
+}
