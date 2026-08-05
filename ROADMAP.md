@@ -8,7 +8,7 @@ Authoritative task list. Work top-down; tick with date + commit. v0.1 MVP shippe
 - [ ] Viewer: render `session/request_permission`, fs read/write requests, terminal output, plan updates decently (read-only display; delegated approval stays out of scope).
 - [ ] Decide rendering for real-world `agent_thought_chunk` volume (currently coalesced THINKING blocks — confirm it holds).
 - [ ] SSE keep-alive heartbeat (idle connections get dropped by intermediaries).
-- [ ] Name check: `perch` on npm. If taken, rename now, before public artifacts exist.
+- [ ] Name decision. Checked 2026-08-06: `perch`, `tandem`, `standby`, `shoulder`, `witness` all taken on npm; `perched` is FREE (`npx perched claude` still reads well). Chris decides; rename is one grep while nothing is public.
 
 ## Phase 2 — Validate the pain (no new features)
 
