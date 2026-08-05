@@ -10,6 +10,7 @@ const TIMEOUT = 20000
 
 let proc
 let port
+let token
 let jsonl
 const outLines = []
 let stderr = ''
@@ -31,7 +32,7 @@ const line = (pred) => waitFor(() => outLines.find(pred), 'stdout line')
 const parsed = () => outLines.map((l) => { try { return JSON.parse(l) } catch { return null } })
 
 async function post(path, body) {
-  return fetch(`http://localhost:${port}${path}`, {
+  return fetch(`http://localhost:${port}${path}?t=${token}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
@@ -39,10 +40,11 @@ async function post(path, body) {
 }
 
 // Read SSE frames until `count` events have arrived, then abort.
-async function readSSE(path, count) {
+async function readSSE(path, count, headers = {}) {
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), TIMEOUT)
-  const res = await fetch(`http://localhost:${port}${path}`, { signal: ac.signal })
+  const sep = path.includes('?') ? '&' : '?'
+  const res = await fetch(`http://localhost:${port}${path}${sep}t=${token}`, { signal: ac.signal, headers })
   assert.equal(res.headers.get('content-type'), 'text/event-stream')
   const out = []
   let buf = ''
@@ -53,7 +55,8 @@ async function readSSE(path, count) {
       while ((i = buf.indexOf('\n\n')) >= 0) {
         const raw = buf.slice(0, i)
         buf = buf.slice(i + 2)
-        if (raw.startsWith('data: ')) out.push(JSON.parse(raw.slice(6)))
+        const dataLine = raw.split('\n').find((l) => l.startsWith('data: '))
+        if (dataLine) out.push(JSON.parse(dataLine.slice(6)))
       }
       if (out.length >= count) break
     }
@@ -80,9 +83,10 @@ before(async () => {
   proc.stderr.setEncoding('utf8')
   proc.stderr.on('data', (d) => { stderr += d })
 
-  const m = await waitFor(() => stderr.match(/^perch: live at http:\/\/localhost:(\d+) {2}\(recording: (.+)\)$/m), 'startup line')
+  const m = await waitFor(() => stderr.match(/^perch: live at http:\/\/localhost:(\d+)\/\?t=([0-9a-f]+) {2}\(recording: (.+)\)$/m), 'startup line')
   port = Number(m[1])
-  jsonl = m[2]
+  token = m[2]
+  jsonl = m[3]
 })
 
 after(() => { proc?.kill('SIGKILL') })
@@ -128,6 +132,14 @@ test('(b) GET /events replays the recorded frames', async () => {
   assert.equal(second.frame.result.protocolVersion, 1)
 
   assert.ok(evs.some((e) => e.frame?.params?.update?.content?.text === 'ack:hello'), 'update frame replayed')
+
+  // SSE resume: a reconnect with Last-Event-ID only replays events past it
+  const resumed = await readSSE('/events', 2, { 'last-event-id': '6' })
+  assert.ok(resumed.every((e) => e.seq > 6), `resume leaked old seqs: ${resumed.map((e) => e.seq)}`)
+
+  // and everything is a 401 without the token
+  const denied = await fetch(`http://localhost:${port}/events`)
+  assert.equal(denied.status, 401)
 })
 
 test('(c) /join + /inject reaches the agent and is attributed to the viewer', async () => {
@@ -194,8 +206,8 @@ test('(f) 409 from /inject before a session exists, and 409-free after', async (
   p2.stderr.setEncoding('utf8')
   p2.stderr.on('data', (d) => { err += d })
   try {
-    const m = await waitFor(() => err.match(/localhost:(\d+)/), 'p2 startup')
-    const res = await fetch(`http://localhost:${m[1]}/inject`, {
+    const m = await waitFor(() => err.match(/localhost:(\d+)\/\?t=([0-9a-f]+)/), 'p2 startup')
+    const res = await fetch(`http://localhost:${m[1]}/inject?t=${m[2]}`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ id: 'v-1', text: 'too early' }),
     })

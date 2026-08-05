@@ -390,13 +390,14 @@ function toast(msg) {
 }
 
 /* ---------- composer ---------- */
+var T = encodeURIComponent(new URLSearchParams(location.search).get('t') || '');
 $('composer').addEventListener('submit', function (e) {
   e.preventDefault();
   var input = $('input'), text = input.value.trim();
   if (!text) return;
   input.value = '';
   if (DEMO) { toast('demo mode — nothing is sent'); return; }
-  fetch('/inject', {
+  fetch('/inject?t=' + T, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ id: state.me, text: text })
@@ -410,7 +411,7 @@ $('composer').addEventListener('submit', function (e) {
 function connect(id) {
   state.me = id;
   $('input').disabled = false; $('send').disabled = false;
-  var es = new EventSource('/events?id=' + encodeURIComponent(id));
+  var es = new EventSource('/events?id=' + encodeURIComponent(id) + '&t=' + T);
   es.onmessage = function (m) {
     var ev; try { ev = JSON.parse(m.data); } catch (_) { return; }
     render(ev);
@@ -421,7 +422,7 @@ function connect(id) {
 
 function join(name) {
   localStorage.setItem('perch.name', name);
-  fetch('/join', {
+  fetch('/join?t=' + T, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: name })
   }).then(function (r) { return r.json(); })

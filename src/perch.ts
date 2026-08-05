@@ -2,6 +2,7 @@
 // perch v0.1 — transparent multiplayer proxy for ACP coding-agent sessions.
 // stdout is the wire. All perch output goes to stderr. See CONTRACT.md.
 import { spawn } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -16,6 +17,9 @@ if (argv.length === 0) {
 }
 
 const agentCmd = argv.join(' ')
+// ponytail: link-based auth — knowing the URL is the permission. Ceiling: no
+// per-viewer revocation; rotate by restarting perch or setting PERCH_TOKEN.
+const token = process.env.PERCH_TOKEN || randomBytes(8).toString('hex')
 const child = spawn(argv[0], argv.slice(1), { stdio: ['pipe', 'pipe', 'pipe'] })
 child.stderr.pipe(process.stderr)
 child.on('error', (e) => {
@@ -41,7 +45,7 @@ function emit(ev: any) {
   events.push(full)
   const json = JSON.stringify(full)
   appendFileSync(sessionFile, json + '\n')
-  for (const res of subs) res.write(`data: ${json}\n\n`)
+  for (const res of subs) res.write(`id: ${full.seq}\ndata: ${json}\n\n`)
 }
 
 const OWNER = { id: 'owner', type: 'human', name: 'owner' }
@@ -115,6 +119,12 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost')
   const p = url.pathname
 
+  // the viewer page itself is inert without the token; the API is gated
+  if (['/events', '/join', '/inject'].includes(p) && url.searchParams.get('t') !== token) {
+    res.writeHead(401, { 'content-type': 'text/plain' }).end('bad or missing token')
+    return
+  }
+
   if (req.method === 'GET' && p === '/') {
     try {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(readFileSync(viewerHtml))
@@ -130,7 +140,9 @@ const server = createServer(async (req, res) => {
       'cache-control': 'no-cache',
       connection: 'keep-alive',
     })
-    for (const ev of events) res.write(`data: ${JSON.stringify(ev)}\n\n`)
+    // native SSE resume: browser sends Last-Event-ID on reconnect, we skip past it
+    const after = Number(req.headers['last-event-id']) || 0
+    for (const ev of events) if (ev.seq > after) res.write(`id: ${ev.seq}\ndata: ${JSON.stringify(ev)}\n\n`)
     subs.add(res)
     const id = url.searchParams.get('id')
     res.on('close', () => {
@@ -177,7 +189,7 @@ const port = Number(process.env.PERCH_PORT ?? 7337)
 server.listen(port, () => {
   const a = server.address()
   const bound = typeof a === 'object' && a ? a.port : port
-  process.stderr.write(`perch: live at http://localhost:${bound}  (recording: ${sessionFile})\n`)
+  process.stderr.write(`perch: live at http://localhost:${bound}/?t=${token}  (recording: ${sessionFile})\n`)
 })
 
 child.on('exit', (code, signal) => {

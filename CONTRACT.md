@@ -24,8 +24,10 @@ Fixed by The Good. Both `src/` and `public/` code against this. Do not change it
 
 ## HTTP API (embedded server in the proxy)
 
+All endpoints except `GET /` require the session token as query param `?t=<token>` → `401` otherwise. The token is random per session (or `PERCH_TOKEN`) and embedded in the share URL perch prints.
+
 - `GET /` → serves `public/viewer.html` (Content-Type text/html).
-- `GET /events?id=<viewerId>` → SSE (`text/event-stream`). On connect: replay **all** past events in order, then stream live. Each event: `data: <event JSON>\n\n`. If `id` is a registered viewer, its SSE disconnect broadcasts a `leave` presence event.
+- `GET /events?id=<viewerId>&t=<token>` → SSE (`text/event-stream`). On connect: replay **all** past events in order, then stream live. Each event: `id: <seq>\ndata: <event JSON>\n\n`. A reconnect carrying a `Last-Event-ID` header only gets events with `seq` greater than it (native EventSource resume — no duplicates). If `id` is a registered viewer, its SSE disconnect broadcasts a `leave` presence event.
 - `POST /join` body `{"name":"Max"}` → `200 {"id":"v-1"}`. Registers viewer, broadcasts `join` presence event.
 - `POST /inject` body `{"id":"v-1","text":"use the staging endpoint"}` → `202`. Proxy writes to the agent's stdin a JSON-RPC request: `{"jsonrpc":"2.0","id":"perch:<n>","method":"session/prompt","params":{"sessionId":"<current>","prompt":[{"type":"text","text":"..."}]}}` and logs it as a frame event attributed to the viewer. `409` if no sessionId is known yet.
 
@@ -35,7 +37,7 @@ Fixed by The Good. Both `src/` and `public/` code against this. Do not change it
 - Exception: agent responses whose `id` starts with `"perch:"` answer an injected request — swallow them (log as frame, do NOT forward to our stdout; the editor never asked).
 - Track current `sessionId`: from any frame with `params.sessionId`, or a `session/new` response `result.sessionId`.
 - All perch's own output (URL, session file path, errors) goes to **stderr**. stdout is the wire.
-- Startup line on stderr, exactly: `perch: live at http://localhost:<port>  (recording: <jsonl path>)`
+- Startup line on stderr, exactly: `perch: live at http://localhost:<port>/?t=<token>  (recording: <jsonl path>)`
 - Port: `PERCH_PORT` env (0 = ephemeral), default 7337. Session file: `~/.perch/sessions/<ISO-ts>-<pid>.jsonl` (dirs created).
 - Agent stderr → our stderr. Agent exit → proxy exits with same code, server closed.
 
