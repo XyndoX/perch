@@ -13,7 +13,8 @@ Works with any ACP agent: Claude Code, Gemini CLI, Goose, and friends.
 node src/perch.ts <your-agent-command...>
 
 # perch prints (to stderr, the wire stays clean):
-# perch: live at http://localhost:7337  (recording: ~/.perch/sessions/....jsonl)
+# perch: live at http://localhost:7337/?t=a1b2c3d4e5f67890  (recording: ~/.perch/sessions/....jsonl)
+# the ?t= token is the share secret — knowing the URL is the permission
 ```
 
 Open the URL, pick a name, watch. Type in the box to inject a prompt into the live session — it lands attributed to you, not to the session owner.
