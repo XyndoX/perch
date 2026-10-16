@@ -1,6 +1,15 @@
-# perch
+<p align="center"><img src="assets/logo.svg" width="160" alt="perch logo: three birds perched together on one wire"></p>
 
-Multiplayer sessions for ACP coding agents.
+<h1 align="center">perch</h1>
+
+<p align="center"><i>Multiplayer sessions for ACP coding agents.</i></p>
+
+<p align="center">
+  <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-7dd3c0?style=flat-square" alt="Agent Client Protocol"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-9d8df1?style=flat-square" alt="License: Apache-2.0"></a>
+  <img src="https://img.shields.io/badge/node-%E2%89%A522.18-f0a868?style=flat-square" alt="Node >= 22.18">
+  <img src="https://img.shields.io/badge/dependencies-0-7b8694?style=flat-square" alt="Zero dependencies">
+</p>
 
 ![perch live session — two people steering one agent](docs/demo.png)
 
@@ -44,7 +53,7 @@ Start a thread with that agent; perch prints the share URL on stderr (Zed's agen
 
 - **Byte-faithful passthrough** — perch never modifies or reorders the ACP wire.
 - **Local recording** — every frame appended to a JSONL file with sequence, timestamp, and actor attribution (`human`/`agent`, who exactly).
-- **Live viewer** — transcript, tool calls, presence, replay for late joiners. Try `viewer.html?demo` for a canned demo.
+- **Live viewer** — transcript, tool calls, presence, replay for late joiners. Open `public/viewer.html?demo` in a browser for a canned demo.
 - **Write path** — `POST /inject` sends a `session/prompt` into the running session, attributed to the viewer who sent it.
 
 ## What's deliberately not here (yet)

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11181f"/>
+      <stop offset="1" stop-color="#0a0c0f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <svg x="96" y="140" width="360" height="360" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14202a"/>
+      <stop offset="1" stop-color="#0a0c0f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#7dd3c0" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#7dd3c0" stop-opacity="0"/>
+    </radialGradient>
+    <!-- one bird, facing right, feet at (0,0) -->
+    <g id="bird">
+      <path d="M -24 -18 L -50 34 L -32 38 L -4 -8 Z"/>
+      <ellipse cx="-2" cy="-44" rx="40" ry="44" transform="rotate(-18 -2 -44)"/>
+      <circle cx="20" cy="-92" r="27"/>
+      <path d="M 42 -101 L 68 -91 L 42 -82 Z" fill="#f2c14e"/>
+      <path d="M -36 -54 Q -6 -76 22 -46 Q -8 -22 -36 -54 Z" fill="#000" opacity="0.2"/>
+      <circle cx="28" cy="-96" r="6" fill="#0a0c0f"/>
+    </g>
+  </defs>
+
+  <rect width="512" height="512" rx="96" fill="url(#night)"/>
+  <circle cx="256" cy="300" r="210" fill="url(#glow)"/>
+
+  <!-- the shared wire -->
+  <path d="M 0 338 Q 256 378 512 338" fill="none" stroke="#7b8694" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- the session: everyone perched on the same line -->
+  <use xlink:href="#bird" href="#bird" transform="translate(130 352)" fill="#7dd3c0"/>
+  <use xlink:href="#bird" href="#bird" transform="translate(384 352)" fill="#9d8df1"/>
+  <use xlink:href="#bird" href="#bird" transform="translate(257 358) scale(1.1)" fill="#f0a868"/>
+
+  <!-- live signal -->
+  <g fill="none" stroke="#7dd3c0" stroke-width="10" stroke-linecap="round">
+    <path d="M 228 168 A 40 40 0 0 1 286 168" opacity="0.9"/>
+    <path d="M 208 142 A 68 68 0 0 1 306 142" opacity="0.5"/>
+  </g>
+</svg>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+    <text x="532" y="300" font-size="132" font-weight="700" fill="#dfe5ec" letter-spacing="-3">perch</text>
+    <text x="536" y="372" font-size="34" font-weight="500" fill="#7dd3c0">Multiplayer sessions for ACP coding agents</text>
+    <text x="536" y="428" font-size="28" fill="#7b8694">Share a live agent session with a link.</text>
+    <text x="536" y="468" font-size="28" fill="#7b8694">Watch it, see who did what, steer it.</text>
+  </g>
+</svg>
